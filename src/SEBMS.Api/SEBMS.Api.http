@@ -1,0 +1,6 @@
+@SEBMS.Api_HostAddress = http://localhost:5076
+
+GET {{SEBMS.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
