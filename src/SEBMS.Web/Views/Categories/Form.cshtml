@@ -1,0 +1,38 @@
+@using SEBMS.Domain.Enums
+@model CategoryFormViewModel
+@{
+    var editing = Model.Id is not null;
+    ViewData["Title"] = editing ? "Edit category" : "Add category";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <div class="auth-card" style="margin-top:1rem">
+            <h1>@ViewData["Title"]</h1>
+            <p class="subtitle">Categories group your income and expenses.</p>
+            <form method="post" asp-action="@(editing ? "Edit" : "Create")" asp-route-id="@Model.Id">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" maxlength="50" autofocus />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Type" class="form-label"></label>
+                    <select asp-for="Type" class="form-select">
+                        <option value="">Select a type…</option>
+                        <option value="@TransactionType.Expense" selected="@(Model.Type == TransactionType.Expense)">Expense</option>
+                        <option value="@TransactionType.Income" selected="@(Model.Type == TransactionType.Income)">Income</option>
+                    </select>
+                    <span asp-validation-for="Type" class="text-danger"></span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">@(editing ? "Save changes" : "Add category")</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

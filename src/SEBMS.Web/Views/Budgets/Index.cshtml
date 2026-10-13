@@ -1,0 +1,64 @@
+@model BudgetListViewModel
+@{
+    ViewData["Title"] = "Budgets";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h1 class="h3 mb-0">Budgets &middot; @Money.MonthName(Model.Month) @Model.Year</h1>
+    <div class="d-flex gap-2">
+        <form method="get" class="d-flex gap-2">
+            <select name="month" class="form-select form-select-sm" aria-label="Month" onchange="this.form.submit()">
+                @for (var m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(m == Model.Month)">@Money.MonthName(m)</option>
+                }
+            </select>
+            <input type="number" name="year" value="@Model.Year" min="2000" max="2100" class="form-control form-control-sm" style="width:90px" aria-label="Year" onchange="this.form.submit()" />
+        </form>
+        <a asp-action="Create" asp-route-year="@Model.Year" asp-route-month="@Model.Month" class="btn btn-primary btn-sm">+ Add budget</a>
+    </div>
+</div>
+
+@if (TempData["Success"] is string ok) { <div class="alert alert-success py-2">@ok</div> }
+@if (TempData["Error"] is string err) { <div class="alert alert-danger py-2">@err</div> }
+
+@if (Model.Items.Count == 0)
+{
+    <div class="card"><div class="card-body text-muted">No budgets for this month yet. Add one to track your spending against a limit.</div></div>
+}
+else
+{
+    <div class="card mb-3"><div class="card-body d-flex flex-wrap justify-content-between gap-3">
+        <div><div class="stat-label">Total budget</div><div class="h5 mb-0">@Money.Format(Model.TotalBudget)</div></div>
+        <div><div class="stat-label">Spent</div><div class="h5 mb-0">@Money.Format(Model.TotalSpent)</div></div>
+        <div><div class="stat-label">Remaining</div><div class="h5 mb-0 @(Model.TotalBudget - Model.TotalSpent < 0 ? "text-danger" : "text-success")">@Money.Format(Model.TotalBudget - Model.TotalSpent)</div></div>
+    </div></div>
+
+    <div class="row g-3">
+    @foreach (var b in Model.Items)
+    {
+        var pct = b.Amount == 0 ? 0 : Math.Min(100m, b.Spent / b.Amount * 100);
+        var over = b.Remaining < 0;
+        var bar = over ? "bg-danger" : pct >= 80 ? "bg-warning" : "bg-success";
+        <div class="col-md-6">
+            <div class="card h-100"><div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h2 class="h6 mb-0">@b.CategoryName</h2>
+                    <span class="text-nowrap">
+                        <a asp-action="Edit" asp-route-id="@b.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <form asp-action="Delete" asp-route-id="@b.Id" asp-route-year="@Model.Year" asp-route-month="@Model.Month" method="post" class="d-inline" onsubmit="return confirm('Delete this budget?');">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary text-danger">Delete</button>
+                        </form>
+                    </span>
+                </div>
+                <div class="progress mb-2" style="height:10px"><div class="progress-bar @bar" style="width:@pct.ToString("0.##", inv)%"></div></div>
+                <div class="d-flex justify-content-between small">
+                    <span>@Money.Format(b.Spent) of @Money.Format(b.Amount)</span>
+                    <span class="@(over ? "text-danger fw-semibold" : "text-muted")">@(over ? "Over by " + Money.Format(-b.Remaining) : Money.Format(b.Remaining) + " left")</span>
+                </div>
+            </div></div>
+        </div>
+    }
+    </div>
+}
