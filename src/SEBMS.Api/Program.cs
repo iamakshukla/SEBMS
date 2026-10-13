@@ -61,7 +61,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// In development the Web app calls this API over plain http. Redirecting to https would move the request
+// to another origin, and .NET drops the Authorization header on cross-origin redirects (login loop).
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
