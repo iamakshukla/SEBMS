@@ -1,0 +1,90 @@
+@using SEBMS.Domain.Enums
+@model TransactionListViewModel
+@{
+    ViewData["Title"] = "Transactions";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Transactions</h1>
+    <a asp-action="Create" class="btn btn-primary">+ Add transaction</a>
+</div>
+
+@if (TempData["Success"] is string ok) { <div class="alert alert-success py-2">@ok</div> }
+@if (TempData["Error"] is string err) { <div class="alert alert-danger py-2">@err</div> }
+
+<form method="get" class="card mb-3"><div class="card-body">
+    <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="from">From</label>
+            <input type="date" id="from" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="to">To</label>
+            <input type="date" id="to" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="type">Type</label>
+            <select id="type" name="type" class="form-select">
+                <option value="">All</option>
+                <option value="Income" selected="@(Model.Type == TransactionType.Income)">Income</option>
+                <option value="Expense" selected="@(Model.Type == TransactionType.Expense)">Expense</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="categoryId">Category</label>
+            <select id="categoryId" name="categoryId" class="form-select">
+                <option value="">All</option>
+                @foreach (var c in Model.Categories)
+                {
+                    <option value="@c.Id" selected="@(Model.CategoryId == c.Id)">@c.Name (@c.Type)</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill">Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </div>
+</div></form>
+
+<div class="card"><div class="card-body">
+    @if (Model.Items.Count == 0)
+    {
+        <p class="text-muted mb-0">No transactions found.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Date</th><th>Category</th><th>Note</th><th class="text-end">Amount</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var t in Model.Items)
+                {
+                    var income = t.Type == TransactionType.Income;
+                    <tr>
+                        <td class="text-nowrap">@t.TransactionDate.ToString("dd MMM yyyy")</td>
+                        <td>@t.CategoryName <span class="badge rounded-pill @(income ? "text-bg-success" : "text-bg-danger") ms-1">@t.Type</span></td>
+                        <td class="text-muted">@t.Note</td>
+                        <td class="text-end fw-semibold @(income ? "text-success" : "text-danger")">@(income ? "+" : "−")@Money.Format(t.Amount)</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            <form asp-action="Delete" asp-route-id="@t.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this transaction?');">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary text-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot>
+                    <tr class="fw-semibold">
+                        <td colspan="3" class="text-muted">@Model.Items.Count transaction(s)</td>
+                        <td class="text-end" colspan="2">
+                            <span class="text-success">+@Money.Format(Model.Income)</span> &nbsp;
+                            <span class="text-danger">−@Money.Format(Model.Expense)</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div></div>
