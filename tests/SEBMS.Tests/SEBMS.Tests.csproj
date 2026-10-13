@@ -23,6 +23,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SEBMS.Application\SEBMS.Application.csproj" />
     <ProjectReference Include="..\..\src\SEBMS.Domain\SEBMS.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SEBMS.Infrastructure\SEBMS.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\SEBMS.Api\SEBMS.Api.csproj" />
   </ItemGroup>
 
 </Project>
