@@ -15,13 +15,7 @@ public class TransactionsController(ApiClient api) : Controller
 {
     public async Task<IActionResult> Index(DateOnly? from, DateOnly? to, int? categoryId, TransactionType? type)
     {
-        var query = new List<string>();
-        if (from is not null) query.Add($"from={from:yyyy-MM-dd}");
-        if (to is not null) query.Add($"to={to:yyyy-MM-dd}");
-        if (categoryId is not null) query.Add($"categoryId={categoryId}");
-        if (type is not null) query.Add($"type={type}");
-
-        var items = await api.GetAsync<List<TransactionResponse>>("api/transactions" + (query.Count > 0 ? "?" + string.Join("&", query) : ""));
+        var items = await api.GetAsync<List<TransactionResponse>>(ListUrl(from, to, categoryId, type));
         var categories = await api.GetAsync<List<CategoryResponse>>("api/categories");
         if (await HandleFailureAsync(items, categories) is { } failure) return failure;
 
@@ -30,6 +24,46 @@ public class TransactionsController(ApiClient api) : Controller
             From = from, To = to, CategoryId = categoryId, Type = type,
             Categories = categories.Data!, Items = items.Data!
         });
+    }
+
+    // Downloads the transactions matching the current filters as a CSV file.
+    public async Task<IActionResult> Export(DateOnly? from, DateOnly? to, int? categoryId, TransactionType? type)
+    {
+        var items = await api.GetAsync<List<TransactionResponse>>(ListUrl(from, to, categoryId, type));
+        if (await HandleFailureAsync(items) is { } failure) return failure;
+
+        var csv = new System.Text.StringBuilder("Date,Type,Category,Amount,Currency,Note\r\n");
+        foreach (var t in items.Data!)
+        {
+            csv.Append(t.TransactionDate.ToString("yyyy-MM-dd")).Append(',')
+               .Append(t.Type).Append(',')
+               .Append(CsvText(t.CategoryName)).Append(',')
+               .Append(t.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+               .Append(t.CurrencyCode).Append(',')
+               .Append(CsvText(t.Note)).Append("\r\n");
+        }
+
+        // UTF-8 with BOM so Excel reads non-ASCII text correctly.
+        var bytes = new System.Text.UTF8Encoding(true).GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+        return File(bytes, "text/csv", $"sebms-transactions-{DateTime.Today:yyyyMMdd}.csv");
+    }
+
+    private static string ListUrl(DateOnly? from, DateOnly? to, int? categoryId, TransactionType? type)
+    {
+        var query = new List<string>();
+        if (from is not null) query.Add($"from={from:yyyy-MM-dd}");
+        if (to is not null) query.Add($"to={to:yyyy-MM-dd}");
+        if (categoryId is not null) query.Add($"categoryId={categoryId}");
+        if (type is not null) query.Add($"type={type}");
+        return "api/transactions" + (query.Count > 0 ? "?" + string.Join("&", query) : "");
+    }
+
+    // Quotes the value and neutralises spreadsheet formulas (CSV injection) in user-entered text.
+    private static string CsvText(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        if ("=+-@\t\r".Contains(value[0])) value = "'" + value;
+        return "\"" + value.Replace("\"", "\"\"") + "\"";
     }
 
     [HttpGet]
