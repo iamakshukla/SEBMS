@@ -1,0 +1,114 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var maxTrend = Math.Max(1m, Model.Trend.Months.Max(t => Math.Max(t.Income, t.Expense)));
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">@Money.MonthName(Model.Month) @Model.Year</h1>
+    <form method="get" class="d-flex gap-2">
+        <select name="month" class="form-select form-select-sm" aria-label="Month" onchange="this.form.submit()">
+            @for (var m = 1; m <= 12; m++)
+            {
+                <option value="@m" selected="@(m == Model.Month)">@Money.MonthName(m)</option>
+            }
+        </select>
+        <input type="number" name="year" value="@Model.Year" min="2000" max="2100" class="form-control form-control-sm" style="width:90px" aria-label="Year" onchange="this.form.submit()" />
+    </form>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card income h-100"><div class="card-body">
+            <div class="stat-label">Income</div>
+            <div class="stat-value text-success">@Money.Format(Model.Summary.TotalIncome)</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card expense h-100"><div class="card-body">
+            <div class="stat-label">Expenses</div>
+            <div class="stat-value text-danger">@Money.Format(Model.Summary.TotalExpense)</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card net h-100"><div class="card-body">
+            <div class="stat-label">Net balance</div>
+            <div class="stat-value @(Model.Summary.Net < 0 ? "text-danger" : "text-success")">@Money.Format(Model.Summary.Net)</div>
+            <div class="text-muted small">@Model.Summary.TransactionCount transaction(s)</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5">Spending by category</h2>
+            @if (Model.Spending.Items.Count == 0)
+            {
+                <p class="text-muted mb-0">No expenses this month.</p>
+            }
+            else
+            {
+                foreach (var item in Model.Spending.Items)
+                {
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small">
+                            <span>@item.CategoryName</span>
+                            <span>@Money.Format(item.Total) &middot; @item.Percentage.ToString("0.#")%</span>
+                        </div>
+                        <div class="progress" style="height:8px"><div class="progress-bar" style="width:@item.Percentage.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
+                    </div>
+                }
+            }
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5">Budgets</h2>
+            @if (Model.Budgets.Count == 0)
+            {
+                <p class="text-muted mb-0">No budgets set for this month.</p>
+            }
+            else
+            {
+                foreach (var b in Model.Budgets)
+                {
+                    var pct = b.Amount == 0 ? 0 : Math.Min(100m, b.Spent / b.Amount * 100);
+                    var over = b.Remaining < 0;
+                    var bar = over ? "bg-danger" : pct >= 80 ? "bg-warning" : "bg-success";
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small">
+                            <span>@b.CategoryName</span>
+                            <span class="@(over ? "text-danger" : "")">@Money.Format(b.Spent) of @Money.Format(b.Amount)@(over ? " (over by " + Money.Format(-b.Remaining) + ")" : "")</span>
+                        </div>
+                        <div class="progress" style="height:8px"><div class="progress-bar @bar" style="width:@pct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
+                    </div>
+                }
+            }
+        </div></div>
+    </div>
+</div>
+
+<div class="card mb-4"><div class="card-body">
+    <h2 class="h5">@Model.Year by month</h2>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Month</th><th style="width:40%">Income / Expense</th><th class="text-end">Income</th><th class="text-end">Expense</th><th class="text-end">Net</th></tr></thead>
+            <tbody>
+            @foreach (var t in Model.Trend.Months)
+            {
+                <tr class="@(t.Month == Model.Month ? "table-active" : "")">
+                    <td>@Money.MonthName(t.Month)</td>
+                    <td>
+                        <div class="progress mb-1" style="height:6px"><div class="progress-bar bg-success" style="width:@((t.Income / maxTrend * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div></div>
+                        <div class="progress" style="height:6px"><div class="progress-bar bg-danger" style="width:@((t.Expense / maxTrend * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div></div>
+                    </td>
+                    <td class="text-end">@Money.Format(t.Income)</td>
+                    <td class="text-end">@Money.Format(t.Expense)</td>
+                    <td class="text-end @(t.Net < 0 ? "text-danger" : "")">@Money.Format(t.Net)</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div></div>

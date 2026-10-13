@@ -1,0 +1,9 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="alert alert-danger mt-4">
+    <h1 class="h5">The dashboard could not be loaded</h1>
+    <p class="mb-2">@ViewBag.Error</p>
+    <a asp-action="Index" class="btn btn-sm btn-outline-danger">Try again</a>
+</div>
