@@ -24,6 +24,25 @@
   --bs-border-radius: 10px;
 }
 
+/* The app is designed light-only. This stops browser/OS dark modes (and "auto dark" extensions)
+   from turning text white on our light surfaces. */
+:root { color-scheme: light; }
+
+/* Make text colours explicit so nothing can fall back to white. */
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 { color: var(--sebms-text); }
+.card, .card-body, .list-group-item, .table, .table > :not(caption) > * > *,
+.form-label, label, .input-group-text { color: var(--sebms-text); }
+.text-muted, .form-text, .subtitle { color: var(--sebms-muted) !important; }
+.text-success { color: var(--sebms-success) !important; }
+.text-danger { color: var(--sebms-danger) !important; }
+.form-control, .form-select, .form-control::placeholder { color: var(--sebms-text); }
+.form-control::placeholder { color: #9aa1b2; }
+select option, select optgroup { color: var(--sebms-text); background: #fff; }
+.input-group-text { background: #f1f3f9; border-color: var(--sebms-border); }
+.alert-success { background: #e8f7ee; color: #14532d; }
+.alert-danger { background: #fdecec; color: #7f1d1d; }
+.badge.text-bg-light { background: #f1f3f9 !important; color: var(--sebms-muted) !important; }
+
 html {
   font-size: 15px;
   position: relative;
@@ -56,11 +75,18 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; letter-spacing: -.01em; }
 .navbar-brand {
   font-weight: 800;
   letter-spacing: .04em;
-  background: linear-gradient(135deg, #4f46e5, #9333ea);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent !important;
   font-size: 1.35rem;
+  color: var(--sebms-primary) !important;   /* solid fallback: always visible */
+}
+
+/* Gradient text only where the browser can clip it; otherwise the solid colour above stays. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .navbar-brand {
+    background: linear-gradient(135deg, #4f46e5, #9333ea);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 .navbar .nav-link {
