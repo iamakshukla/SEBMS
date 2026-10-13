@@ -14,8 +14,12 @@
     <link rel="stylesheet" href="~/SEBMS.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @{
+        var current = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        string Active(string controller) => string.Equals(current, controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-dark">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-controller="Home" asp-action="Index">SEBMS</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
@@ -27,33 +31,33 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                                <a class="nav-link @Active("Dashboard")" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Transactions" asp-action="Index">Transactions</a>
+                                <a class="nav-link @Active("Transactions")" asp-controller="Transactions" asp-action="Index">Transactions</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Budgets" asp-action="Index">Budgets</a>
+                                <a class="nav-link @Active("Budgets")" asp-controller="Budgets" asp-action="Index">Budgets</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Categories" asp-action="Index">Categories</a>
+                                <a class="nav-link @Active("Categories")" asp-controller="Categories" asp-action="Index">Categories</a>
                             </li>
                         }
                     </ul>
                     <ul class="navbar-nav">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item d-flex align-items-center me-3 text-muted">@User.Identity.Name</li>
+                            <li class="nav-item d-flex align-items-center me-3 navbar-text">@User.Identity.Name</li>
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post">
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm">Sign out</button>
+                                    <button type="submit" class="btn btn-outline-light btn-sm">Sign out</button>
                                 </form>
                             </li>
                         }
                         else
                         {
-                            <li class="nav-item"><a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Sign in</a></li>
-                            <li class="nav-item"><a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a></li>
+                            <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Login" ? "active" : "")" asp-controller="Account" asp-action="Login">Sign in</a></li>
+                            <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Register" ? "active" : "")" asp-controller="Account" asp-action="Register">Register</a></li>
                         }
                     </ul>
                 </div>
