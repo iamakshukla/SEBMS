@@ -10,8 +10,11 @@ Built with ASP.NET Core (.NET 10): a JSON Web API secured with JWT, an MVC web a
 - **Transactions** — add, edit, delete (soft delete), filter by date range, type and category, **export to CSV**.
 - **Categories** — 13 built-in defaults (read-only) plus your own custom categories.
 - **Budgets** — monthly limit per expense category with live *spent* and *remaining* amounts.
-- **Dashboard** — monthly income, expenses and net balance, spending by category, budget progress and a 12-month overview.
-- Every user only ever sees their own data.
+- **Dashboard** — monthly income, expenses and net balance, with charts for spending by category, budget vs spent and a 12-month overview.
+- **Monthly report** — download any month as a **PDF** or an **Excel** workbook (summary, category breakdown, budgets and every transaction) from the dashboard buttons, or at `/Reports/Monthly?year=2026&month=10&format=pdf|xlsx`.
+- Every user only ever sees their own data (except the admin, see below).
+
+Report libraries: [ClosedXML](https://github.com/ClosedXML/ClosedXML) (MIT) for Excel and [QuestPDF](https://www.questpdf.com) for PDF. QuestPDF is used under its free Community licence (individuals and small organisations); check its licence terms before using this commercially at larger scale.
 
 ## Solution layout
 

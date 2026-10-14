@@ -12,6 +12,11 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">@Money.MonthName(Model.Month) @Model.Year</h1>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="btn-group btn-group-sm" role="group" aria-label="Download this month's report">
+        <a asp-controller="Reports" asp-action="Monthly" asp-route-year="@Model.Year" asp-route-month="@Model.Month" asp-route-format="pdf" class="btn btn-outline-secondary">Report PDF</a>
+        <a asp-controller="Reports" asp-action="Monthly" asp-route-year="@Model.Year" asp-route-month="@Model.Month" asp-route-format="xlsx" class="btn btn-outline-secondary">Excel</a>
+    </div>
     <form method="get" class="d-flex gap-2">
         <select name="month" class="form-select form-select-sm" aria-label="Month" onchange="this.form.submit()">
             @for (var m = 1; m <= 12; m++)
@@ -21,6 +26,7 @@
         </select>
         <input type="number" name="year" value="@Model.Year" min="2000" max="2100" class="form-control form-control-sm" style="width:90px" aria-label="Year" onchange="this.form.submit()" />
     </form>
+    </div>
 </div>
 
 <div class="row g-3 mb-4">
