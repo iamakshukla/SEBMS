@@ -145,7 +145,9 @@ The same restore, build and test steps run automatically on GitHub for every pus
 
 ## Admin
 
-The account whose email equals `Admin:Email` is the application's admin. After signing in with that email, an **Admin** link appears in the navbar. The admin can list all users, delete a user together with all their data, and view every user's transactions, budgets and categories. Nobody else can get the role: it is re-checked against the setting on every sign-in, and the API enforces it on `/api/admin/*`.
+The account whose email equals `Admin:Email` is the application's admin. After signing in with that email, an **Admin** link appears in the navbar. The admin can list all users, delete a user together with all their data, and view every user's transactions, budgets and categories. The admin can also **edit or delete** any user's transactions, budgets and custom categories from the Admin tables. Edits follow the *owner's* rules: a transaction can only use categories that user can see, a user still gets only one budget per category and month, and the shared default categories stay read-only for everyone. Deleting a transaction is a soft delete, like when the owner does it, and a category that is in use cannot be deleted. Nobody else can get the role: it is re-checked against the setting on every sign-in, and the API enforces it on `/api/admin/*`.
+
+Admin edits are not logged or announced to the user whose data was changed.
 
 ## Configuration reference
 
