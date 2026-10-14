@@ -12,7 +12,7 @@ Built with ASP.NET Core (.NET 10): a JSON Web API secured with JWT, an MVC web a
 - **Transactions** — add, edit, delete (soft delete), filter by date range, type and category, **export to CSV**.
 - **Recurring transactions** — set up rent, salary or subscriptions once (weekly, monthly or yearly); each occurrence is recorded automatically and marked "Recurring" in the transaction list. Pause, resume, edit or delete a rule at any time.
 - **Categories** — 13 built-in defaults (read-only) plus your own custom categories.
-- **Budgets** — monthly limit per expense category with live *spent* and *remaining* amounts.
+- **Budgets** — monthly limit per expense category with live *spent* and *remaining* amounts. **Budget alerts** appear once a budget is 80% used and again when it is exceeded: right after you save an expense, in a banner on the dashboard, and as badges on the Budgets page.
 - **Dashboard** — monthly income, expenses and net balance, with charts for spending by category, budget vs spent and a 12-month overview.
 - **Monthly report** — download any month as a **PDF** or an **Excel** workbook (summary, category breakdown, budgets and every transaction) from the dashboard buttons, or at `/Reports/Monthly?year=2026&month=10&format=pdf|xlsx`.
 - Every user only ever sees their own data (except the admin, see below).

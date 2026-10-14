@@ -29,6 +29,28 @@
     </div>
 </div>
 
+@{
+    var alerts = Model.Budgets
+        .Select(b => (Budget: b, Level: BudgetStatus.LevelOf(b)))
+        .Where(x => x.Level != BudgetLevel.Ok)
+        .OrderByDescending(x => x.Level)
+        .ThenByDescending(x => BudgetStatus.PercentUsed(x.Budget.Spent, x.Budget.Amount))
+        .ToList();
+}
+@if (alerts.Count > 0)
+{
+    <div class="alert @(alerts.Any(a => a.Level == BudgetLevel.Over) ? "alert-danger" : "alert-warning") mb-3" role="alert">
+        <div class="fw-semibold mb-1">Budget alert@(alerts.Count > 1 ? "s" : "")</div>
+        <ul class="mb-0 ps-3">
+            @foreach (var a in alerts)
+            {
+                <li>@BudgetStatus.Message(a.Budget)</li>
+            }
+        </ul>
+        <a asp-controller="Budgets" asp-action="Index" asp-route-year="@Model.Year" asp-route-month="@Model.Month" class="alert-link small">Manage budgets</a>
+    </div>
+}
+
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card stat-card income h-100"><div class="card-body">

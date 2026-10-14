@@ -39,12 +39,16 @@ else
     @foreach (var b in Model.Items)
     {
         var pct = b.Amount == 0 ? 0 : Math.Min(100m, b.Spent / b.Amount * 100);
-        var over = b.Remaining < 0;
-        var bar = over ? "bg-danger" : pct >= 80 ? "bg-warning" : "bg-success";
+        var level = BudgetStatus.LevelOf(b);
+        var over = level == BudgetLevel.Over;
+        var bar = over ? "bg-danger" : level == BudgetLevel.Warning ? "bg-warning" : "bg-success";
         <div class="col-md-6">
             <div class="card h-100"><div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h2 class="h6 mb-0">@b.CategoryName</h2>
+                    <h2 class="h6 mb-0">@b.CategoryName
+                        @if (over) { <span class="badge rounded-pill text-bg-danger ms-1">Over budget</span> }
+                        else if (level == BudgetLevel.Warning) { <span class="badge rounded-pill text-bg-warning ms-1">@BudgetStatus.PercentUsed(b.Spent, b.Amount)% used</span> }
+                    </h2>
                     <span class="text-nowrap">
                         <a asp-action="Edit" asp-route-id="@b.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
                         <form asp-action="Delete" asp-route-id="@b.Id" asp-route-year="@Model.Year" asp-route-month="@Model.Month" method="post" class="d-inline" onsubmit="return confirm('Delete this budget?');">

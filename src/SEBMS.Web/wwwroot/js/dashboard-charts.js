@@ -50,6 +50,7 @@
     // Budgets: budgeted vs spent, horizontal bars
     const budgets = document.getElementById('budgetChart');
     if (budgets && data.budgets.length) {
+        // 0.8 mirrors BudgetStatus.WarningThreshold on the server.
         const spentColor = b => b.spent > b.amount ? danger : (b.amount > 0 && b.spent / b.amount >= 0.8) ? warning : success;
         new Chart(budgets, {
             type: 'bar',

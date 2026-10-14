@@ -43,6 +43,8 @@ select option, select optgroup { color: var(--sebms-text); background: #fff; }
 .input-group-text { background: #f1f3f9; border-color: var(--sebms-border); }
 .alert-success { background: #e8f7ee; color: #14532d; }
 .alert-danger { background: #fdecec; color: #7f1d1d; }
+.alert-warning { background: #fff6dd; color: #7a4a00; border-color: #f5dd9b; }
+.alert-warning .alert-link, .alert-danger .alert-link { color: inherit; text-decoration: underline; }
 .badge.text-bg-light { background: #f1f3f9 !important; color: var(--sebms-muted) !important; }
 
 html {

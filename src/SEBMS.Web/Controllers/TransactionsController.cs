@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SEBMS.Application.Budgets;
 using SEBMS.Application.Categories;
 using SEBMS.Application.Transactions;
 using SEBMS.Domain.Enums;
@@ -139,7 +140,18 @@ public class TransactionsController(ApiClient api) : Controller
         }
 
         TempData["Success"] = model.Id is null ? "Transaction added." : "Transaction updated.";
+        if (category.Type == TransactionType.Expense)
+            TempData["Warning"] = await BudgetWarningAsync(category.Id, model.TransactionDate!.Value);
         return RedirectToAction(nameof(Index));
+    }
+
+    // After an expense is saved: a message if its category's budget for that month is now nearly used up or exceeded.
+    // Best effort only: if the lookup fails the save still succeeded, so just show nothing.
+    private async Task<string?> BudgetWarningAsync(int categoryId, DateOnly date)
+    {
+        var budgets = await api.GetAsync<List<BudgetResponse>>($"api/budgets?year={date.Year}&month={date.Month}");
+        var budget = budgets.Data?.FirstOrDefault(b => b.CategoryId == categoryId);
+        return budget is null ? null : BudgetStatus.Message(budget);
     }
 
     // Returns a redirect (expired token) or error page when any call failed; null when all succeeded.

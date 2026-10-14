@@ -14,6 +14,7 @@
 </div>
 
 @if (TempData["Success"] is string ok) { <div class="alert alert-success py-2">@ok</div> }
+@if (TempData["Warning"] is string warn) { <div class="alert alert-warning py-2" role="alert"><strong>Budget alert:</strong> @warn <a asp-controller="Budgets" asp-action="Index" class="alert-link">View budgets</a></div> }
 @if (TempData["Error"] is string err) { <div class="alert alert-danger py-2">@err</div> }
 
 <form method="get" class="card mb-3"><div class="card-body">
