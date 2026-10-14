@@ -1,5 +1,7 @@
 # SEBMS
 
+[![CI](https://github.com/iamakshukla/SEBMS/actions/workflows/ci.yml/badge.svg)](https://github.com/iamakshukla/SEBMS/actions/workflows/ci.yml)
+
 Smart Expense & Budget Management System — track income and expenses, set monthly budgets per category, and see where your money goes.
 
 Built with ASP.NET Core (.NET 10): a JSON Web API secured with JWT, an MVC web app on top of it, and SQL Server via EF Core.
@@ -126,6 +128,8 @@ dotnet test
 ```
 
 The tests use an in-memory database, so they don't touch your real data.
+
+The same restore, build and test steps run automatically on GitHub for every push to `main` and every pull request (`.github/workflows/ci.yml`). The badge at the top shows the latest result.
 
 ## Troubleshooting
 
