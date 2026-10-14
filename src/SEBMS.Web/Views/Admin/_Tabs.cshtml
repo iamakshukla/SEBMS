@@ -1,0 +1,13 @@
+@{
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string Tab(string name) => string.Equals(action, name, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+}
+<h1 class="h3 mb-3">Admin</h1>
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link @Tab("Index")" asp-action="Index">Users</a></li>
+    <li class="nav-item"><a class="nav-link @Tab("Transactions")" asp-action="Transactions">All transactions</a></li>
+    <li class="nav-item"><a class="nav-link @Tab("Budgets")" asp-action="Budgets">All budgets</a></li>
+    <li class="nav-item"><a class="nav-link @Tab("Categories")" asp-action="Categories">All categories</a></li>
+</ul>
+@if (TempData["Success"] is string ok) { <div class="alert alert-success py-2">@ok</div> }
+@if (TempData["Error"] is string err) { <div class="alert alert-danger py-2">@err</div> }

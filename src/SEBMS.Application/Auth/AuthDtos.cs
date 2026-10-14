@@ -11,4 +11,4 @@ public record LoginRequest(
     [Required, EmailAddress] string Email,
     [Required] string Password);
 
-public record AuthResponse(string Token, DateTime ExpiresAt, string Email, string? DisplayName);
+public record AuthResponse(string Token, DateTime ExpiresAt, string Email, string? DisplayName, bool IsAdmin = false);

@@ -1,0 +1,36 @@
+@using SEBMS.Application.Admin
+@using SEBMS.Domain.Enums
+@model List<AdminTransactionResponse>
+@{
+    ViewData["Title"] = "Admin - Transactions";
+}
+<partial name="_Tabs" />
+
+<div class="card"><div class="card-body">
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted mb-0">No transactions found.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Date</th><th>User</th><th>Category</th><th>Note</th><th class="text-end">Amount</th></tr></thead>
+                <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>@t.TransactionDate.ToString("yyyy-MM-dd")</td>
+                        <td>@t.UserEmail</td>
+                        <td>@t.CategoryName</td>
+                        <td>@t.Note</td>
+                        <td class="text-end @(t.Type == TransactionType.Income ? "text-success" : "text-danger")">
+                            @(t.Type == TransactionType.Income ? "+" : "-")@t.Amount.ToString("N2") @t.CurrencyCode
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div></div>

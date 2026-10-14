@@ -46,6 +46,7 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost\
 dotnet user-secrets set "Jwt:Key"      "<a random string of at least 32 characters>"
 dotnet user-secrets set "Jwt:Issuer"   "SEBMS"
 dotnet user-secrets set "Jwt:Audience" "SEBMS.Clients"
+dotnet user-secrets set "Admin:Email" "<the email of the one admin account>"
 cd ..\..
 ```
 
@@ -132,10 +133,15 @@ The tests use an in-memory database, so they don't touch your real data.
 | Cannot connect to SQL Server | Check the server name in the connection string (`localhost\SQLEXPRESS` vs `(localdb)\MSSQLLocalDB`) and that the SQL Server service is running. |
 | Browser warns about the HTTPS certificate | Run `dotnet dev-certs https --trust` once. |
 
+## Admin
+
+The account whose email equals `Admin:Email` is the application's admin. After signing in with that email, an **Admin** link appears in the navbar. The admin can list all users, delete a user together with all their data, and view every user's transactions, budgets and categories. Nobody else can get the role: it is re-checked against the setting on every sign-in, and the API enforces it on `/api/admin/*`.
+
 ## Configuration reference
 
 | Setting | Where | Purpose |
 | --- | --- | --- |
 | `ConnectionStrings:DefaultConnection` | API user-secrets | SQL Server connection |
 | `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience` | API user-secrets | Token signing and validation (tokens last 8 hours) |
+| `Admin:Email` | API user-secrets | The one admin account (see Admin). Leave unset for no admin |
 | `Api:BaseUrl` | `SEBMS.Web\appsettings.json` | Where the web app finds the API |

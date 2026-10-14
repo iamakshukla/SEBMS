@@ -65,6 +65,7 @@ public class AccountController(ApiClient api) : Controller
             new(ClaimTypes.Email, auth.Email),
             new(ApiClient.TokenClaim, auth.Token)
         };
+        if (auth.IsAdmin) claims.Add(new Claim(ClaimTypes.Role, "Admin"));   // UI gate only; the API enforces it
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         return HttpContext.SignInAsync(new ClaimsPrincipal(identity), new AuthenticationProperties
         {

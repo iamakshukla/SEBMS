@@ -1,0 +1,32 @@
+@using SEBMS.Application.Admin
+@model List<AdminBudgetResponse>
+@{
+    ViewData["Title"] = "Admin - Budgets";
+}
+<partial name="_Tabs" />
+
+<div class="card"><div class="card-body">
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted mb-0">No budgets found.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Month</th><th>User</th><th>Category</th><th class="text-end">Budget</th></tr></thead>
+                <tbody>
+                @foreach (var b in Model)
+                {
+                    <tr>
+                        <td>@b.BudgetYear-@b.BudgetMonth.ToString("00")</td>
+                        <td>@b.UserEmail</td>
+                        <td>@b.CategoryName</td>
+                        <td class="text-end">@b.Amount.ToString("N2")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div></div>

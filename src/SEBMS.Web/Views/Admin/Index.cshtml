@@ -1,0 +1,35 @@
+@using SEBMS.Application.Admin
+@model List<AdminUserResponse>
+@{
+    ViewData["Title"] = "Admin - Users";
+}
+<partial name="_Tabs" />
+
+<div class="card"><div class="card-body">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>Email</th><th>Name</th><th class="text-end">Transactions</th><th class="text-end">Budgets</th><th>Joined</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var u in Model)
+            {
+                <tr>
+                    <td>@u.Email @if (u.IsAdmin) { <span class="badge rounded-pill text-bg-primary ms-1">Admin</span> }</td>
+                    <td>@u.DisplayName</td>
+                    <td class="text-end"><a asp-action="Transactions" asp-route-userId="@u.Id">@u.TransactionCount</a></td>
+                    <td class="text-end"><a asp-action="Budgets" asp-route-userId="@u.Id">@u.BudgetCount</a></td>
+                    <td>@u.CreatedAt.ToString("yyyy-MM-dd")</td>
+                    <td class="text-end">
+                        @if (!u.IsAdmin)
+                        {
+                            <form asp-action="DeleteUser" asp-route-id="@u.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('Delete @u.Email and ALL their transactions, budgets and categories? This cannot be undone.');">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary text-danger">Delete</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div></div>

@@ -8,7 +8,9 @@ namespace SEBMS.Api.Services;
 
 public class JwtTokenService(IConfiguration config)
 {
-    public (string Token, DateTime ExpiresAt) Create(ApplicationUser user)
+    public const string AdminRole = "Admin";
+
+    public (string Token, DateTime ExpiresAt) Create(ApplicationUser user, bool isAdmin = false)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
         var expires = DateTime.UtcNow.AddHours(8);
@@ -19,6 +21,8 @@ public class JwtTokenService(IConfiguration config)
             new(JwtRegisteredClaimNames.Email, user.Email!),
             new(ClaimTypes.NameIdentifier, user.Id)
         };
+
+        if (isAdmin) claims.Add(new Claim(ClaimTypes.Role, AdminRole));
 
         var token = new JwtSecurityToken(
             issuer: config["Jwt:Issuer"],
