@@ -17,6 +17,8 @@ builder.Services.AddIdentityCore<ApplicationUser>()
 
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<AdminRoleService>();
+builder.Services.AddScoped<RecurringTransactionProcessor>();
+builder.Services.AddHostedService<RecurringTransactionWorker>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

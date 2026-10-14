@@ -8,6 +8,7 @@ Built with ASP.NET Core (.NET 10): a JSON Web API secured with JWT, an MVC web a
 
 - **Accounts** — register, sign in, sign out (ASP.NET Core Identity + JWT).
 - **Transactions** — add, edit, delete (soft delete), filter by date range, type and category, **export to CSV**.
+- **Recurring transactions** — set up rent, salary or subscriptions once (weekly, monthly or yearly); each occurrence is recorded automatically and marked "Recurring" in the transaction list. Pause, resume, edit or delete a rule at any time.
 - **Categories** — 13 built-in defaults (read-only) plus your own custom categories.
 - **Budgets** — monthly limit per expense category with live *spent* and *remaining* amounts.
 - **Dashboard** — monthly income, expenses and net balance, with charts for spending by category, budget vs spent and a 12-month overview.
@@ -105,6 +106,7 @@ All endpoints except `auth/*` require `Authorization: Bearer <token>`.
 | `GET/POST /api/categories`, `GET/PUT/DELETE /api/categories/{id}` | Default + own categories (defaults are read-only) |
 | `GET/POST /api/transactions`, `GET/PUT/DELETE /api/transactions/{id}` | Filters: `from`, `to`, `categoryId`, `type` |
 | `GET/POST /api/budgets`, `GET/PUT/DELETE /api/budgets/{id}` | Filters: `year`, `month`; includes `spent` and `remaining` |
+| `GET/POST /api/recurring`, `GET/PUT/DELETE /api/recurring/{id}`, `POST /api/recurring/run` | Recurring rules (`Weekly`/`Monthly`/`Yearly`); `run` generates anything currently due |
 | `GET /api/reports/summary?year=&month=` | Income, expense and net for a month |
 | `GET /api/reports/by-category?year=&month=&type=` | Spending (or income) per category with percentages |
 | `GET /api/reports/monthly-trend?year=` | All 12 months of income and expense |
@@ -113,7 +115,8 @@ Business rules worth knowing:
 
 - A transaction's type must match its category's type.
 - Budgets are only allowed for expense categories, one per category per month.
-- A category that has transactions or budgets cannot be deleted.
+- A category that has transactions, budgets or recurring transactions cannot be deleted.
+- A recurring transaction creates a real transaction on each due date (weekly, monthly or yearly, with an optional end date). The API generates them when a rule is saved, at start-up (catching up on anything missed while it was off) and then every hour. A monthly rule on the 31st falls on the last day of shorter months and returns to the 31st afterwards. Deleting a rule keeps the transactions it already created. Changing a rule's start date or frequency restarts it without re-creating past dates.
 - Deleted transactions are hidden, not removed (soft delete).
 
 ## Tests

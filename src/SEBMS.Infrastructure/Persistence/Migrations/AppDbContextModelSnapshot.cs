@@ -344,6 +344,90 @@ namespace SEBMS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEBMS.Domain.Entities.RecurringTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(3)")
+                        .HasDefaultValue("INR");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(7)");
+
+                    b.Property<int>("GeneratedCount")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(7)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("IX_RecurringTransactions_User_Active");
+
+                    b.ToTable("RecurringTransactions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RecurringTransactions_Amount", "[Amount] > 0 AND [Amount] <= 9999999999");
+
+                            t.HasCheckConstraint("CK_RecurringTransactions_Dates", "[EndDate] IS NULL OR [EndDate] >= [StartDate]");
+
+                            t.HasCheckConstraint("CK_RecurringTransactions_Frequency", "[Frequency] IN ('Weekly','Monthly','Yearly')");
+
+                            t.HasCheckConstraint("CK_RecurringTransactions_Type", "[Type] IN ('Income','Expense')");
+                        });
+                });
+
             modelBuilder.Entity("SEBMS.Domain.Entities.Transaction", b =>
                 {
                     b.Property<int>("Id")
@@ -379,6 +463,9 @@ namespace SEBMS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int?>("RecurringTransactionId")
+                        .HasColumnType("int");
+
                     b.Property<DateOnly>("TransactionDate")
                         .HasColumnType("date");
 
@@ -399,6 +486,10 @@ namespace SEBMS.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("RecurringTransactionId")
+                        .HasDatabaseName("IX_Transactions_Recurring")
+                        .HasFilter("[RecurringTransactionId] IS NOT NULL");
 
                     b.HasIndex("UserId", "TransactionDate")
                         .IsDescending(false, true)
@@ -568,6 +659,23 @@ namespace SEBMS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("SEBMS.Domain.Entities.RecurringTransaction", b =>
+                {
+                    b.HasOne("SEBMS.Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SEBMS.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("SEBMS.Domain.Entities.Transaction", b =>
                 {
                     b.HasOne("SEBMS.Domain.Entities.Category", "Category")
@@ -575,6 +683,11 @@ namespace SEBMS.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("SEBMS.Domain.Entities.RecurringTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("RecurringTransactionId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("SEBMS.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()

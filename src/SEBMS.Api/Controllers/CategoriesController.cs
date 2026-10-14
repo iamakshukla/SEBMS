@@ -60,8 +60,9 @@ public class CategoriesController(AppDbContext db) : ApiControllerBase
         if (category is null) return NotFound();
 
         if (await db.Transactions.AnyAsync(t => t.CategoryId == id) ||
-            await db.Budgets.AnyAsync(b => b.CategoryId == id))
-            return Conflict("Category is in use by transactions or budgets.");
+            await db.Budgets.AnyAsync(b => b.CategoryId == id) ||
+            await db.RecurringTransactions.AnyAsync(r => r.CategoryId == id))
+            return Conflict("Category is in use by transactions, budgets or recurring transactions.");
 
         db.Categories.Remove(category);
         await db.SaveChangesAsync();

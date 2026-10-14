@@ -13,6 +13,9 @@ public class Transaction
     public string? Note { get; set; }
     public string CurrencyCode { get; set; } = "INR";
     public bool IsDeleted { get; set; }
+
+    /// <summary>The recurring rule that generated this transaction, if any (cleared if the rule is deleted).</summary>
+    public int? RecurringTransactionId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

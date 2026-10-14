@@ -12,7 +12,7 @@ public class TransactionsController(AppDbContext db) : ApiControllerBase
     private IQueryable<Transaction> Mine => db.Transactions.Where(t => t.UserId == UserId && !t.IsDeleted);
 
     private static TransactionResponse ToResponse(Transaction t, string? categoryName) =>
-        new(t.Id, t.CategoryId, categoryName, t.Type, t.Amount, t.TransactionDate, t.Note, t.CurrencyCode);
+        new(t.Id, t.CategoryId, categoryName, t.Type, t.Amount, t.TransactionDate, t.Note, t.CurrencyCode, t.RecurringTransactionId);
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<TransactionResponse>>> GetAll(

@@ -30,6 +30,13 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         b.HasOne(x => x.Category).WithMany(c => c.Transactions).HasForeignKey(x => x.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);   // a category with transactions cannot be deleted
 
+        b.HasOne<RecurringTransaction>().WithMany().HasForeignKey(x => x.RecurringTransactionId)
+            .OnDelete(DeleteBehavior.SetNull);   // deleting a rule keeps the transactions it already created
+
+        b.HasIndex(x => x.RecurringTransactionId)
+            .HasFilter("[RecurringTransactionId] IS NOT NULL")
+            .HasDatabaseName("IX_Transactions_Recurring");
+
         b.HasIndex(x => new { x.UserId, x.TransactionDate })
             .IsDescending(false, true)
             .HasFilter("[IsDeleted] = 0")

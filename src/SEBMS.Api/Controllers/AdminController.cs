@@ -37,7 +37,8 @@ public class AdminController(AppDbContext db) : ApiControllerBase
         await using var tx = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync() : null;
         db.Transactions.RemoveRange(db.Transactions.Where(t => t.UserId == id));
         db.Budgets.RemoveRange(db.Budgets.Where(b => b.UserId == id));
-        await db.SaveChangesAsync();   // before categories: transactions and budgets reference them
+        db.RecurringTransactions.RemoveRange(db.RecurringTransactions.Where(r => r.UserId == id));
+        await db.SaveChangesAsync();   // before categories: transactions, budgets and rules reference them
 
         db.Categories.RemoveRange(db.Categories.Where(c => c.UserId == id));
         db.UserRoles.RemoveRange(db.UserRoles.Where(r => r.UserId == id));

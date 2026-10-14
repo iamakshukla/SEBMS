@@ -19,4 +19,5 @@ public record TransactionResponse(
     decimal Amount,
     DateOnly TransactionDate,
     string? Note,
-    string CurrencyCode);
+    string CurrencyCode,
+    int? RecurringTransactionId = null);
