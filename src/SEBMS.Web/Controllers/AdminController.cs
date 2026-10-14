@@ -32,6 +32,17 @@ public class AdminController(ApiClient api) : AppController(api)
         return RedirectToAction(nameof(Index));
     }
 
+    // ---------- audit log ----------
+
+    public async Task<IActionResult> Audit(string? userId, int page = 1)
+    {
+        var url = $"api/admin/audit?page={Math.Max(1, page)}" + (userId is null ? "" : $"&userId={Uri.EscapeDataString(userId)}");
+        var result = await Api.GetAsync<AuditPageResponse>(url);
+        if (await FailAsync(result) is { } failure) return failure;
+        ViewBag.UserId = userId;
+        return View(result.Data!);
+    }
+
     // ---------- lists ----------
 
     public async Task<IActionResult> Transactions(string? userId)

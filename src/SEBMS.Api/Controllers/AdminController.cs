@@ -15,11 +15,52 @@ namespace SEBMS.Api.Controllers;
 /// <summary>
 /// Cross-user data and user management. Only the configured admin account can call these.
 /// When editing another user's record, the rules (category visibility, one budget per category and month, ...)
-/// are applied to the record's owner, not to the admin.
+/// are applied to the record's owner, not to the admin. Every change is written to the audit log in the same
+/// SaveChanges as the change itself.
 /// </summary>
 [Authorize(Roles = JwtTokenService.AdminRole)]
 public class AdminController(AppDbContext db) : ApiControllerBase
 {
+    public const int AuditPageSize = 50;
+
+    // ---------- audit log ----------
+
+    /// <summary>Records one admin action. Call before SaveChanges so the entry commits together with the change.</summary>
+    private async Task AuditAsync(string action, string entityType, string entityId, string targetUserId, string summary, string? details)
+    {
+        var adminEmail = await db.Users.Where(u => u.Id == UserId).Select(u => u.Email).FirstOrDefaultAsync();
+        var targetEmail = await db.Users.Where(u => u.Id == targetUserId).Select(u => u.Email).FirstOrDefaultAsync();
+        db.AuditLogs.Add(new AuditLog
+        {
+            AdminUserId = UserId,
+            AdminEmail = adminEmail ?? "(unknown)",
+            Action = action,
+            EntityType = entityType,
+            EntityId = entityId,
+            TargetUserId = targetUserId,
+            TargetEmail = targetEmail ?? "(unknown)",
+            Summary = summary,
+            Details = details is { Length: > 2000 } ? details[..1997] + "..." : details
+        });
+    }
+
+    /// <summary>Newest first. <paramref name="userId"/> limits it to changes made to one user's data.</summary>
+    [HttpGet("audit")]
+    public async Task<ActionResult<AuditPageResponse>> Audit(string? userId, int page = 1)
+    {
+        page = Math.Max(1, page);
+        var query = db.AuditLogs.Where(a => userId == null || a.TargetUserId == userId);
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(a => a.Id)
+            .Skip((page - 1) * AuditPageSize).Take(AuditPageSize)
+            .Select(a => new AuditEntryResponse(
+                a.Id, a.OccurredAtUtc, a.AdminEmail, a.Action, a.EntityType, a.EntityId,
+                a.TargetUserId, a.TargetEmail, a.Summary, a.Details))
+            .ToListAsync();
+        return new AuditPageResponse(items, total, page, AuditPageSize);
+    }
+
     // ---------- users ----------
 
     [HttpGet("users")]
@@ -45,11 +86,22 @@ public class AdminController(AppDbContext db) : ApiControllerBase
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id);
         if (user is null) return NotFound();
 
+        var counts = new
+        {
+            Transactions = await db.Transactions.CountAsync(t => t.UserId == id),
+            Budgets = await db.Budgets.CountAsync(b => b.UserId == id),
+            Rules = await db.RecurringTransactions.CountAsync(r => r.UserId == id),
+            Categories = await db.Categories.CountAsync(c => c.UserId == id)
+        };
+        await AuditAsync("Delete", "User", id, id, "Deleted user and all their data",
+            $"Removed {counts.Transactions} transactions, {counts.Budgets} budgets, {counts.Rules} recurring rules " +
+            $"and {counts.Categories} custom categories");
+
         await using var tx = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync() : null;
         db.Transactions.RemoveRange(db.Transactions.Where(t => t.UserId == id));
         db.Budgets.RemoveRange(db.Budgets.Where(b => b.UserId == id));
         db.RecurringTransactions.RemoveRange(db.RecurringTransactions.Where(r => r.UserId == id));
-        await db.SaveChangesAsync();   // before categories: transactions, budgets and rules reference them
+        await db.SaveChangesAsync();   // before categories: transactions, budgets and rules reference them (also saves the audit entry)
 
         db.Categories.RemoveRange(db.Categories.Where(c => c.UserId == id));
         db.UserRoles.RemoveRange(db.UserRoles.Where(r => r.UserId == id));
@@ -98,20 +150,31 @@ public class AdminController(AppDbContext db) : ApiControllerBase
     [HttpPut("transactions/{id:int}")]
     public async Task<ActionResult<AdminTransactionResponse>> UpdateTransaction(int id, TransactionRequest request)
     {
-        var t = await db.Transactions.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        var t = await LiveTransactions.Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id);
         if (t is null) return NotFound();
 
         var category = await db.Categories.FirstOrDefaultAsync(c =>
             c.Id == request.CategoryId && c.Type == request.Type && (c.UserId == null || c.UserId == t.UserId));
         if (category is null) return BadRequest("Category not found for this user, or its type does not match the transaction type.");
 
+        var currency = request.CurrencyCode.ToUpperInvariant();
+        var changes = new ChangeSet()
+            .Add("Category", t.Category?.Name, category.Name)
+            .Add("Type", t.Type, request.Type)
+            .Add("Amount", t.Amount, request.Amount)
+            .Add("Date", t.TransactionDate, request.TransactionDate)
+            .Add("Note", t.Note, string.IsNullOrEmpty(request.Note) ? null : request.Note)
+            .Add("Currency", t.CurrencyCode, currency);
+        if (changes.IsEmpty) return await ToRows(LiveTransactions.Where(x => x.Id == id)).FirstAsync();   // nothing to do, nothing to log
+
         t.CategoryId = request.CategoryId;
         t.Type = request.Type;
         t.Amount = request.Amount;
         t.TransactionDate = request.TransactionDate;
         t.Note = request.Note;
-        t.CurrencyCode = request.CurrencyCode.ToUpperInvariant();
+        t.CurrencyCode = currency;
         t.UpdatedAt = DateTime.UtcNow;
+        await AuditAsync("Update", "Transaction", id.ToString(), t.UserId, $"Updated transaction #{id}", changes.ToString());
         await db.SaveChangesAsync();
         return await ToRows(LiveTransactions.Where(x => x.Id == id)).FirstAsync();
     }
@@ -119,11 +182,13 @@ public class AdminController(AppDbContext db) : ApiControllerBase
     [HttpDelete("transactions/{id:int}")]
     public async Task<IActionResult> DeleteTransaction(int id)
     {
-        var t = await db.Transactions.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        var t = await LiveTransactions.Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id);
         if (t is null) return NotFound();
 
         t.IsDeleted = true;   // soft delete, like the owner's own delete
         t.UpdatedAt = DateTime.UtcNow;
+        await AuditAsync("Delete", "Transaction", id.ToString(), t.UserId, $"Deleted transaction #{id}",
+            $"{t.Type} {ChangeSet.Format(t.Amount)} {t.CurrencyCode} in {t.Category?.Name} on {ChangeSet.Format(t.TransactionDate)}, note {ChangeSet.Format(t.Note)}");
         await db.SaveChangesAsync();
         return NoContent();
     }
@@ -151,7 +216,7 @@ public class AdminController(AppDbContext db) : ApiControllerBase
     [HttpPut("budgets/{id:int}")]
     public async Task<ActionResult<AdminBudgetResponse>> UpdateBudget(int id, BudgetRequest request)
     {
-        var b = await db.Budgets.FirstOrDefaultAsync(x => x.Id == id);
+        var b = await db.Budgets.Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id);
         if (b is null) return NotFound();
 
         var category = await db.Categories.FirstOrDefaultAsync(c =>
@@ -162,11 +227,19 @@ public class AdminController(AppDbContext db) : ApiControllerBase
                                            && x.BudgetYear == request.Year && x.BudgetMonth == request.Month))
             return Conflict("This user already has a budget for that category and month.");
 
+        var changes = new ChangeSet()
+            .Add("Category", b.Category?.Name, category.Name)
+            .Add("Year", b.BudgetYear, request.Year)
+            .Add("Month", b.BudgetMonth, request.Month)
+            .Add("Amount", b.Amount, request.Amount);
+        if (changes.IsEmpty) return await ToRows(db.Budgets.Where(x => x.Id == id)).FirstAsync();
+
         b.CategoryId = request.CategoryId;
         b.BudgetYear = request.Year;
         b.BudgetMonth = request.Month;
         b.Amount = request.Amount;
         b.UpdatedAt = DateTime.UtcNow;
+        await AuditAsync("Update", "Budget", id.ToString(), b.UserId, $"Updated budget #{id}", changes.ToString());
         await db.SaveChangesAsync();
         return await ToRows(db.Budgets.Where(x => x.Id == id)).FirstAsync();
     }
@@ -174,9 +247,11 @@ public class AdminController(AppDbContext db) : ApiControllerBase
     [HttpDelete("budgets/{id:int}")]
     public async Task<IActionResult> DeleteBudget(int id)
     {
-        var b = await db.Budgets.FirstOrDefaultAsync(x => x.Id == id);
+        var b = await db.Budgets.Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id);
         if (b is null) return NotFound();
 
+        await AuditAsync("Delete", "Budget", id.ToString(), b.UserId, $"Deleted budget #{id}",
+            $"{b.Category?.Name} budget for {b.BudgetYear}-{b.BudgetMonth:00}: {ChangeSet.Format(b.Amount)}");
         db.Budgets.Remove(b);
         await db.SaveChangesAsync();
         return NoContent();
@@ -214,8 +289,14 @@ public class AdminController(AppDbContext db) : ApiControllerBase
                                                && (c.UserId == null || c.UserId == category.UserId)))
             return Conflict("This user already has a category with that name and type.");
 
+        var changes = new ChangeSet()
+            .Add("Name", category.Name, name)
+            .Add("Type", category.Type, request.Type);
+        if (changes.IsEmpty) return await ToRows(db.Categories.Where(c => c.Id == id)).FirstAsync();
+
         category.Name = name;
         category.Type = request.Type;
+        await AuditAsync("Update", "Category", id.ToString(), category.UserId, $"Updated category #{id}", changes.ToString());
         await db.SaveChangesAsync();
         return await ToRows(db.Categories.Where(c => c.Id == id)).FirstAsync();
     }
@@ -232,6 +313,8 @@ public class AdminController(AppDbContext db) : ApiControllerBase
             await db.RecurringTransactions.AnyAsync(r => r.CategoryId == id))
             return Conflict("Category is in use by transactions, budgets or recurring transactions.");
 
+        await AuditAsync("Delete", "Category", id.ToString(), category.UserId, $"Deleted category #{id}",
+            $"{category.Type} category {ChangeSet.Format(category.Name)}");
         db.Categories.Remove(category);
         await db.SaveChangesAsync();
         return NoContent();

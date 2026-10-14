@@ -1,0 +1,62 @@
+@using SEBMS.Application.Admin
+@model AuditPageResponse
+@{
+    ViewData["Title"] = "Admin - Audit log";
+    string? userId = ViewBag.UserId;
+    var pages = Math.Max(1, (int)Math.Ceiling(Model.Total / (double)Model.PageSize));
+}
+<partial name="_Tabs" />
+
+<p class="text-muted">Every change the admin makes to another user's data is recorded here, newest first. Entries can't be edited or deleted.
+    @if (userId is not null)
+    {
+        <span>Showing one user's history. <a asp-action="Audit">Show everyone</a></span>
+    }
+</p>
+
+<div class="card"><div class="card-body">
+    @if (Model.Items.Count == 0)
+    {
+        <p class="text-muted mb-0">Nothing recorded yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>User affected</th><th>Details</th></tr></thead>
+                <tbody>
+                @foreach (var e in Model.Items)
+                {
+                    <tr>
+                        <td class="text-nowrap">@e.OccurredAtUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                        <td>@e.AdminEmail</td>
+                        <td class="text-nowrap">
+                            <span class="badge rounded-pill @(e.Action == "Delete" ? "text-bg-danger" : "text-bg-primary")">@e.Action</span>
+                            <span class="text-muted">@e.EntityType</span>
+                        </td>
+                        <td><a asp-action="Audit" asp-route-userId="@e.TargetUserId">@e.TargetEmail</a></td>
+                        <td>
+                            <div>@e.Summary</div>
+                            @if (!string.IsNullOrEmpty(e.Details)) { <div class="small text-muted">@e.Details</div> }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        @if (pages > 1)
+        {
+            <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Audit log pages">
+                <span class="text-muted small">@Model.Total entries &middot; page @Model.Page of @pages</span>
+                <div class="btn-group btn-group-sm">
+                    @if (Model.Page > 1) { <a asp-action="Audit" asp-route-userId="@userId" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary">&laquo; Newer</a> }
+                    @if (Model.Page < pages) { <a asp-action="Audit" asp-route-userId="@userId" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary">Older &raquo;</a> }
+                </div>
+            </nav>
+        }
+        else
+        {
+            <div class="text-muted small mt-3">@Model.Total @(Model.Total == 1 ? "entry" : "entries")</div>
+        }
+    }
+</div></div>

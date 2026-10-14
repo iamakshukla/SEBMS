@@ -18,7 +18,8 @@
                     <td class="text-end"><a asp-action="Transactions" asp-route-userId="@u.Id">@u.TransactionCount</a></td>
                     <td class="text-end"><a asp-action="Budgets" asp-route-userId="@u.Id">@u.BudgetCount</a></td>
                     <td>@u.CreatedAt.ToString("yyyy-MM-dd")</td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
+                        <a asp-action="Audit" asp-route-userId="@u.Id" class="btn btn-sm btn-outline-secondary">History</a>
                         @if (!u.IsAdmin)
                         {
                             <form asp-action="DeleteUser" asp-route-id="@u.Id" method="post" class="d-inline"

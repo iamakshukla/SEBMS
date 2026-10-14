@@ -16,5 +16,11 @@ public record AdminBudgetResponse(
     int Id, string UserEmail, string? CategoryName, short BudgetYear, byte BudgetMonth, decimal Amount,
     int CategoryId = 0, string UserId = "");
 
+public record AuditEntryResponse(
+    long Id, DateTime OccurredAtUtc, string AdminEmail, string Action, string EntityType, string EntityId,
+    string TargetUserId, string TargetEmail, string Summary, string? Details);
+
+public record AuditPageResponse(IReadOnlyList<AuditEntryResponse> Items, int Total, int Page, int PageSize);
+
 /// <summary>OwnerEmail is null for the shared default categories.</summary>
 public record AdminCategoryResponse(int Id, string Name, TransactionType Type, bool IsDefault, string? OwnerEmail);
