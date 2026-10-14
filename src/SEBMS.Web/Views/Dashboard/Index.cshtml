@@ -1,7 +1,13 @@
+@using System.Text.Json
 @model DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var maxTrend = Math.Max(1m, Model.Trend.Months.Max(t => Math.Max(t.Income, t.Expense)));
+    var chartData = JsonSerializer.Serialize(new
+    {
+        spending = Model.Spending.Items.Select(i => new { name = i.CategoryName, total = i.Total, pct = i.Percentage }),
+        budgets = Model.Budgets.Select(b => new { name = b.CategoryName, amount = b.Amount, spent = b.Spent }),
+        trend = Model.Trend.Months.Select(t => new { month = Money.MonthName(t.Month).Substring(0, 3), income = t.Income, expense = t.Expense })
+    }).Replace("<", "\\u003c");   // keep the JSON safe inside a <script> block
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
@@ -49,16 +55,10 @@
             }
             else
             {
-                foreach (var item in Model.Spending.Items)
-                {
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between small">
-                            <span>@item.CategoryName</span>
-                            <span>@Money.Format(item.Total) &middot; @item.Percentage.ToString("0.#")%</span>
-                        </div>
-                        <div class="progress" style="height:8px"><div class="progress-bar" style="width:@item.Percentage.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
-                    </div>
-                }
+                <div class="chart-box">
+                    <canvas id="spendingChart" role="img"
+                            aria-label="Doughnut chart of spending by category: @string.Join(", ", Model.Spending.Items.Select(i => $"{i.CategoryName} {i.Percentage:0.#}%"))"></canvas>
+                </div>
             }
         </div></div>
     </div>
@@ -71,19 +71,10 @@
             }
             else
             {
-                foreach (var b in Model.Budgets)
-                {
-                    var pct = b.Amount == 0 ? 0 : Math.Min(100m, b.Spent / b.Amount * 100);
-                    var over = b.Remaining < 0;
-                    var bar = over ? "bg-danger" : pct >= 80 ? "bg-warning" : "bg-success";
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between small">
-                            <span>@b.CategoryName</span>
-                            <span class="@(over ? "text-danger" : "")">@Money.Format(b.Spent) of @Money.Format(b.Amount)@(over ? " (over by " + Money.Format(-b.Remaining) + ")" : "")</span>
-                        </div>
-                        <div class="progress" style="height:8px"><div class="progress-bar @bar" style="width:@pct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
-                    </div>
-                }
+                <div class="chart-box" style="height:@(Math.Max(220, Model.Budgets.Count * 56 + 70))px">
+                    <canvas id="budgetChart" role="img"
+                            aria-label="Bar chart of budget versus spent per category: @string.Join("; ", Model.Budgets.Select(b => $"{b.CategoryName} spent {Money.Format(b.Spent)} of {Money.Format(b.Amount)}"))"></canvas>
+                </div>
             }
         </div></div>
     </div>
@@ -91,18 +82,17 @@
 
 <div class="card mb-4"><div class="card-body">
     <h2 class="h5">@Model.Year by month</h2>
+    <div class="chart-box mb-3">
+        <canvas id="trendChart" role="img" aria-label="Column chart of income and expense for each month of @Model.Year"></canvas>
+    </div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
-            <thead><tr><th>Month</th><th style="width:40%">Income / Expense</th><th class="text-end">Income</th><th class="text-end">Expense</th><th class="text-end">Net</th></tr></thead>
+            <thead><tr><th>Month</th><th class="text-end">Income</th><th class="text-end">Expense</th><th class="text-end">Net</th></tr></thead>
             <tbody>
             @foreach (var t in Model.Trend.Months)
             {
                 <tr class="@(t.Month == Model.Month ? "table-active" : "")">
                     <td>@Money.MonthName(t.Month)</td>
-                    <td>
-                        <div class="progress mb-1" style="height:6px"><div class="progress-bar bg-success" style="width:@((t.Income / maxTrend * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div></div>
-                        <div class="progress" style="height:6px"><div class="progress-bar bg-danger" style="width:@((t.Expense / maxTrend * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div></div>
-                    </td>
                     <td class="text-end">@Money.Format(t.Income)</td>
                     <td class="text-end">@Money.Format(t.Expense)</td>
                     <td class="text-end @(t.Net < 0 ? "text-danger" : "")">@Money.Format(t.Net)</td>
@@ -112,3 +102,10 @@
         </table>
     </div>
 </div></div>
+
+<script id="dashboard-data" type="application/json">@Html.Raw(chartData)</script>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.js"></script>
+    <script src="~/js/dashboard-charts.js" asp-append-version="true"></script>
+}
