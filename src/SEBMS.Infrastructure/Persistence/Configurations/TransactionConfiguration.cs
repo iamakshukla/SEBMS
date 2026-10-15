@@ -23,6 +23,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         b.Property(x => x.Note).HasMaxLength(500);
         b.Property(x => x.CurrencyCode).IsRequired().HasColumnType("char(3)").HasDefaultValue("INR");
         b.Property(x => x.IsDeleted).HasDefaultValue(false);
+        b.Property(x => x.NoticePending).HasDefaultValue(false);
         b.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
 
         b.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId)

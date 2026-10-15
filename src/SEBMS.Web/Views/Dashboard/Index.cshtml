@@ -29,6 +29,29 @@
     </div>
 </div>
 
+@if (Model.Notices is { } notices)
+{
+    <div class="alert alert-info mb-3" role="alert">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div class="fw-semibold">@notices.Count recurring transaction@(notices.Count > 1 ? "s were" : " was") added automatically</div>
+            <form asp-action="DismissNotices" asp-route-year="@Model.Year" asp-route-month="@Model.Month" method="post">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Dismiss</button>
+            </form>
+        </div>
+        <ul class="mb-0 mt-1 ps-3">
+            @foreach (var n in notices.Items)
+            {
+                <li>@n.Date.ToString("d MMM yyyy"): @n.CategoryName, @(n.Type == SEBMS.Domain.Enums.TransactionType.Expense ? "-" : "+")@Money.Format(n.Amount)@(string.IsNullOrWhiteSpace(n.Note) ? "" : $" ({n.Note})")</li>
+            }
+            @if (notices.Count > notices.Items.Count)
+            {
+                <li>and @(notices.Count - notices.Items.Count) more</li>
+            }
+        </ul>
+        <a asp-controller="Transactions" asp-action="Index" class="alert-link small">View transactions</a>
+    </div>
+}
+
 @{
     var alerts = Model.Budgets
         .Select(b => (Budget: b, Level: BudgetStatus.LevelOf(b)))

@@ -136,6 +136,40 @@ public class RecurringTransactionTests
         Assert.Equal(first + second, await db.Transactions.Select(t => t.TransactionDate).Distinct().CountAsync());   // no duplicates
     }
 
+    // ---------- dashboard notices ----------
+
+    [Fact]
+    public async Task Process_FlagsTransactionsForNotice_OnlyWhenAsked()
+    {
+        var db = NewDb();
+        db.RecurringTransactions.Add(Rule("2026-01-15"));
+        await db.SaveChangesAsync();
+        await new RecurringTransactionProcessor(db).ProcessAsync(D("2026-01-20"));
+        Assert.DoesNotContain(db.Transactions, t => t.NoticePending);   // the user's own saves never notify
+
+        await new RecurringTransactionProcessor(db).ProcessAsync(D("2026-03-20"), notify: true);
+        Assert.Equal(2, await db.Transactions.CountAsync(t => t.NoticePending));   // Feb + Mar only
+    }
+
+    [Fact]
+    public async Task Notices_ListOnlyMyPendingOnes_AndDismissClearsThem()
+    {
+        var db = NewDb();
+        db.RecurringTransactions.AddRange(Rule("2026-01-15"), Rule("2026-01-15", user: Bob));
+        await db.SaveChangesAsync();
+        await new RecurringTransactionProcessor(db).ProcessAsync(D("2026-03-20"), notify: true);
+
+        var notices = (await Controller(db, Alice).Notices()).Value();
+        Assert.Equal(3, notices.Count);
+        Assert.Equal(3, notices.Items.Count);
+        Assert.Equal(D("2026-03-15"), notices.Items[0].Date);   // newest first
+
+        Assert.IsType<NoContentResult>(await Controller(db, Alice).DismissNotices());
+
+        Assert.Equal(0, (await Controller(db, Alice).Notices()).Value().Count);
+        Assert.Equal(3, (await Controller(db, Bob).Notices()).Value().Count);   // Bob's are untouched
+    }
+
     // ---------- API controller ----------
 
     private static RecurringController Controller(AppDbContext db, string user) =>

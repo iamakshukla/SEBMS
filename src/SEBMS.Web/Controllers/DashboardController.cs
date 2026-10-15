@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEBMS.Application.Budgets;
+using SEBMS.Application.Recurring;
 using SEBMS.Application.Reports;
 using SEBMS.Web.Models;
 using SEBMS.Web.Services;
@@ -37,10 +38,20 @@ public class DashboardController(ApiClient api) : Controller
             return View("Unavailable");
         }
 
+        var notices = await api.GetAsync<RecurringNoticeResponse>("api/recurring/notices");   // optional: the dashboard still works without it
+
         return View(new DashboardViewModel
         {
             Year = y, Month = m,
-            Summary = summary.Data, Spending = spending.Data, Budgets = budgets.Data, Trend = trend.Data
+            Summary = summary.Data, Spending = spending.Data, Budgets = budgets.Data, Trend = trend.Data,
+            Notices = notices.Data is { Count: > 0 } ? notices.Data : null
         });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DismissNotices(short? year, byte? month)
+    {
+        await api.PostAsync<object>("api/recurring/notices/dismiss", new { });
+        return RedirectToAction(nameof(Index), new { year, month });
     }
 }

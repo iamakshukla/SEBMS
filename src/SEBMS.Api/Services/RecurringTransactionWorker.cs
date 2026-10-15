@@ -18,7 +18,7 @@ public class RecurringTransactionWorker(IServiceScopeFactory scopes, ILogger<Rec
             {
                 using var scope = scopes.CreateScope();
                 var processor = scope.ServiceProvider.GetRequiredService<RecurringTransactionProcessor>();
-                var created = await processor.ProcessAsync(DateOnly.FromDateTime(DateTime.Now), ct: stoppingToken);
+                var created = await processor.ProcessAsync(DateOnly.FromDateTime(DateTime.Now), notify: true, ct: stoppingToken);
                 if (created > 0) logger.LogInformation("Recurring transactions: created {Count}.", created);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

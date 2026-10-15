@@ -16,6 +16,9 @@ public class Transaction
 
     /// <summary>The recurring rule that generated this transaction, if any (cleared if the rule is deleted).</summary>
     public int? RecurringTransactionId { get; set; }
+
+    /// <summary>Set when the background worker generated this transaction and the user has not yet dismissed the dashboard notice.</summary>
+    public bool NoticePending { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

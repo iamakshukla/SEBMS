@@ -21,3 +21,11 @@ public record RecurringResponse(
     DateOnly? NextDueDate, int GeneratedCount, bool IsFinished);
 
 public record RunRecurringResponse(int Created);
+
+/// <summary>A transaction the background worker created that the user has not yet acknowledged.</summary>
+public record RecurringNoticeItem(
+    int TransactionId, DateOnly Date, TransactionType Type, decimal Amount, string CurrencyCode,
+    string? CategoryName, string? Note);
+
+/// <summary>Count is the full number pending; Items holds the most recent few.</summary>
+public record RecurringNoticeResponse(int Count, IReadOnlyList<RecurringNoticeItem> Items);

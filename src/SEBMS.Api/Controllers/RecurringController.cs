@@ -90,6 +90,31 @@ public class RecurringController(AppDbContext db, RecurringTransactionProcessor 
     public async Task<ActionResult<RunRecurringResponse>> Run() =>
         new RunRecurringResponse(await processor.ProcessAsync(Today, UserId));
 
+    /// <summary>Transactions the background worker generated that the user has not dismissed yet (newest first, at most 10 listed).</summary>
+    [HttpGet("notices")]
+    public async Task<ActionResult<RecurringNoticeResponse>> Notices()
+    {
+        var pending = db.Transactions.Where(t => t.UserId == UserId && !t.IsDeleted && t.NoticePending);
+        var count = await pending.CountAsync();
+        var rows = await pending
+            .OrderByDescending(t => t.TransactionDate).ThenByDescending(t => t.Id)
+            .Take(10)
+            .Select(t => new { t.Id, t.TransactionDate, t.Type, t.Amount, t.CurrencyCode, CategoryName = t.Category!.Name, t.Note })
+            .ToListAsync();
+        return new RecurringNoticeResponse(count, rows
+            .Select(t => new RecurringNoticeItem(t.Id, t.TransactionDate, t.Type, t.Amount, t.CurrencyCode, t.CategoryName, t.Note))
+            .ToList());
+    }
+
+    [HttpPost("notices/dismiss")]
+    public async Task<IActionResult> DismissNotices()
+    {
+        var pending = await db.Transactions.Where(t => t.UserId == UserId && t.NoticePending).ToListAsync();
+        foreach (var t in pending) t.NoticePending = false;
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
     private static string? Validate(RecurringRequest r) =>
         r.EndDate is { } end && end < r.StartDate ? "The end date cannot be before the start date." : null;
 

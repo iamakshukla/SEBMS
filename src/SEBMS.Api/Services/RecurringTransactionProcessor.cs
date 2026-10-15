@@ -11,7 +11,8 @@ public class RecurringTransactionProcessor(AppDbContext db)
     public const int MaxPerRulePerRun = 400;
 
     /// <returns>How many transactions were created.</returns>
-    public async Task<int> ProcessAsync(DateOnly today, string? userId = null, CancellationToken ct = default)
+    /// <param name="notify">Flag the new transactions for the dashboard notice (used by the background worker, not by the user's own saves).</param>
+    public async Task<int> ProcessAsync(DateOnly today, string? userId = null, bool notify = false, CancellationToken ct = default)
     {
         var rules = await db.RecurringTransactions
             .Where(r => r.IsActive && (userId == null || r.UserId == userId))
@@ -32,7 +33,8 @@ public class RecurringTransactionProcessor(AppDbContext db)
                     CurrencyCode = rule.CurrencyCode,
                     Note = rule.Note,
                     TransactionDate = rule.NextDueDate,
-                    RecurringTransactionId = rule.Id
+                    RecurringTransactionId = rule.Id,
+                    NoticePending = notify
                 });
                 rule.GeneratedCount++;
             }
